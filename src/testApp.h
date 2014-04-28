@@ -117,7 +117,7 @@ public:
   vector<PointLight> m_lights;
 	
 	//______j
-	void drawScene(int iCameraDraw);
+	void drawScene();
 	vector<ofLight*>      OFlights;
 	/// 3d MODEL
     ofxFBXScene             fbx;
