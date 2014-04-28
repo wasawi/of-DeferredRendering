@@ -45,7 +45,8 @@ void testApp::setup() {
   m_numSphereVerts = sphereMesh.getVertices().size();
   m_sphereVbo.setMesh(sphereMesh, GL_STATIC_DRAW);
 	
-	
+
+	//______j
 	/// 3D MODEL DDD
     ofSetLogLevel(OF_LOG_VERBOSE);
     string modelFilename = "lev.fbx";
@@ -371,8 +372,8 @@ void testApp::draw() {
     sprintf(debug_str, "Framerate: %f\nNumber of lights: %li\nPress SPACE to toggle drawing of debug buffers\nPress +/- to add and remove lights\n'p' to toggle pulsing of light intensity\n'r' to randomize light colours", ofGetFrameRate(), m_lights.size());
     ofDrawBitmapString(debug_str, ofPoint(15, 20));
 	  
-	  	//______j
-//	drawScene(0);
+	//______j
+	drawScene(0);
   }  
 }
 
