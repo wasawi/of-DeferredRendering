@@ -17,6 +17,8 @@ m_bPulseLights(false)
 
 //--------------------------------------------------------------
 void testApp::setup() {
+    activeAO = false;
+    
     ofSetVerticalSync(false); // can cause problems on some Linux implementations
     
     ofDisableArbTex();
@@ -24,9 +26,10 @@ void testApp::setup() {
     setupScreenQuad();
     
     m_cam.setupPerspective( false, 60.0f, 0.1f, 100.0f );
-    m_cam.setDistance(40.0f);
+    m_cam.setDistance(400.0f);
     m_cam.setGlobalPosition( 0.0f, 0.0f, 35.0f );
     m_cam.lookAt( ofVec3f( 0.0f, 0.0f, 0.0f ) );
+    //m_cam.setFarClip(100);
     
     m_shader.load("shaders/mainScene.vert", "shaders/mainScene.frag");
     m_pointLightPassShader.load("shaders/pointLightPass.vert", "shaders/pointLightPass.frag");
@@ -34,7 +37,7 @@ void testApp::setup() {
     
     m_texture.loadImage("textures/concrete.jpg");
     
-    setupLights();
+    //setupLights();
     createRandomBoxes();
     
     ofMesh boxMesh = Primitives::getBoxMesh(1.0f, 1.0f, 1.0f);
@@ -48,9 +51,11 @@ void testApp::setup() {
 	
 	/// 3D MODEL DDD
     ofSetLogLevel(OF_LOG_VERBOSE);
-    string modelFilename = "lev.fbx";
+    string modelFilename = "levLightsScaled.fbx";
     fbx.load(modelFilename);
     meshes = fbx.getMeshes();
+    lightsFBX = fbx.getLights();
+    addFBXLights();
     
     
 }
@@ -66,10 +71,10 @@ void testApp::resizeBuffersAndTextures() {
     }
     
     m_gBuffer.setup(m_windowWidth, m_windowHeight);
-    m_ssaoPass.setup(m_windowWidth, m_windowHeight);
+    if(activeAO) m_ssaoPass.setup(m_windowWidth, m_windowHeight);
     
     // set our camera parameters for ssao pass - inverse proj matrix + far clip are used in shader to recreate position from linear depth
-    m_ssaoPass.setCameraProperties(m_cam.getProjectionMatrix().getInverse(), m_cam.getFarClip());
+    if(activeAO) m_ssaoPass.setCameraProperties(m_cam.getProjectionMatrix().getInverse(), m_cam.getFarClip());
     
     bindGBufferTextures(); // bind them once to upper texture units - faster than binding/unbinding every frame
 }
@@ -115,6 +120,28 @@ void testApp::setupLights() {
     }
 }
 //--------------------------------------------------------------
+void testApp::addFBXLights() {
+    
+    for(int i=0;i<lightsFBX.size();i++)
+    {
+        PointLight* l = new PointLight();
+        
+        l->setPosition(lightsFBX[i]->getPositionAtFrame(0));
+        
+        cout << "adding FBX light at " << l->getPosition();
+        
+        l->setAmbient(0.0f, 0.0f, 0.0f);
+        
+        l->setDiffuse(0.75, 0.75,0.75);
+        l->setSpecular(1.0,1.0,1.0);
+        l->setAttenuation(0.0f, 0.0f, 0.2f); // set constant, linear, and exponential attenuation
+        l->intensity = 1.0f;
+        
+        //l->setScale(0.01);
+        m_lights.push_back(*l);
+    }
+}
+//--------------------------------------------------------------
 void testApp::addRandomLight() {
     // create a random light that is positioned on bounding sphere of scene (skRadius)
     PointLight l;
@@ -134,7 +161,7 @@ void testApp::addRandomLight() {
     ofVec3f col = ofVec3f(ofRandom(0.3f, 0.5f), ofRandom(0.2f, 0.4f), ofRandom(0.7f, 1.0f));
     l.setDiffuse(col.x, col.y, col.z);
     l.setSpecular(col.x, col.y, col.z);
-    l.setAttenuation(0.0f, 0.0f, 0.2f); // set constant, linear, and exponential attenuation
+    l.setAttenuation(0.0f, 0.0f, 0.08f); // set constant, linear, and exponential attenuation
     l.intensity = 0.8f;
     
     m_lights.push_back(l);
@@ -151,7 +178,7 @@ void testApp::bindGBufferTextures() {
     // set up the texture units we want to use - we're using them every frame, so we'll leave them bound to these units to save speed vs. binding/unbinding
     m_textureUnits[TEX_UNIT_ALBEDO] = 15;
     m_textureUnits[TEX_UNIT_NORMALS_DEPTH] = 14;
-    m_textureUnits[TEX_UNIT_SSAO] = 13;
+    if(activeAO) m_textureUnits[TEX_UNIT_SSAO] = 13;
     m_textureUnits[TEX_UNIT_POINTLIGHT_PASS] = 12;
     
     // bind all GBuffer textures
@@ -161,9 +188,12 @@ void testApp::bindGBufferTextures() {
     glActiveTexture(GL_TEXTURE0 + m_textureUnits[TEX_UNIT_NORMALS_DEPTH]);
     glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(GBuffer::GBUFFER_TEXTURE_TYPE_NORMALS_DEPTH));
     
-    // bind SSAO texture
-    glActiveTexture(GL_TEXTURE0 + m_textureUnits[TEX_UNIT_SSAO]);
-    glBindTexture(GL_TEXTURE_2D, m_ssaoPass.getTextureReference());
+    if(activeAO)
+    {
+        // bind SSAO texture
+        glActiveTexture(GL_TEXTURE0 + m_textureUnits[TEX_UNIT_SSAO]);
+        glBindTexture(GL_TEXTURE_2D, m_ssaoPass.getTextureReference());
+    }
     
     // point light pass texture
     glActiveTexture(GL_TEXTURE0 + m_textureUnits[TEX_UNIT_POINTLIGHT_PASS]);
@@ -171,14 +201,14 @@ void testApp::bindGBufferTextures() {
     
     m_shader.begin();  // our final deferred scene shader
     m_shader.setUniform1i("u_albedoTex", m_textureUnits[TEX_UNIT_ALBEDO]);
-    m_shader.setUniform1i("u_ssaoTex", m_textureUnits[TEX_UNIT_SSAO]);
+    if(activeAO) m_shader.setUniform1i("u_ssaoTex", m_textureUnits[TEX_UNIT_SSAO]);
     m_shader.setUniform1i("u_pointLightPassTex", m_textureUnits[TEX_UNIT_POINTLIGHT_PASS]);
     m_shader.end();
     
     m_pointLightPassShader.begin();  // our point light pass shader
     m_pointLightPassShader.setUniform1i("u_albedoTex", m_textureUnits[TEX_UNIT_ALBEDO]);
     m_pointLightPassShader.setUniform1i("u_normalAndDepthTex", m_textureUnits[TEX_UNIT_NORMALS_DEPTH]);
-    m_pointLightPassShader.setUniform1i("u_ssaoTex", m_textureUnits[TEX_UNIT_SSAO]);
+   if(activeAO)  m_pointLightPassShader.setUniform1i("u_ssaoTex", m_textureUnits[TEX_UNIT_SSAO]);
     m_pointLightPassShader.setUniform2f("u_inverseScreenSize", 1.0f/m_windowWidth, 1.0f/m_windowHeight);
     m_pointLightPassShader.end();
     
@@ -189,7 +219,7 @@ void testApp::unbindGBufferTextures() {
     // unbind textures and reset active texture back to zero (OF expects it at 0 - things like ofDrawBitmapString() will break otherwise)
     glActiveTexture(GL_TEXTURE0 + m_textureUnits[TEX_UNIT_ALBEDO]); glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE0 + m_textureUnits[TEX_UNIT_NORMALS_DEPTH]); glBindTexture(GL_TEXTURE_2D, 0);
-    glActiveTexture(GL_TEXTURE0 + m_textureUnits[TEX_UNIT_SSAO]); glBindTexture(GL_TEXTURE_2D, 0);
+    if(activeAO) glActiveTexture(GL_TEXTURE0 + m_textureUnits[TEX_UNIT_SSAO]); glBindTexture(GL_TEXTURE_2D, 0);
     
     glActiveTexture(GL_TEXTURE0);
 }
@@ -212,14 +242,16 @@ void testApp::geometryPass() {
     
     m_boxVbo.bind();
     
-    // draw our randomly rotate boxes
-    for (vector<Box>::iterator it=m_boxes.begin() ; it < m_boxes.end(); it++) {
-        ofPushMatrix();
-        ofRotate(it->angle, it->axis_x, it->axis_y, it->axis_z);
-        ofScale(it->size, it->size, it->size);
-        glDrawArrays(GL_TRIANGLES, 0, m_numBoxVerts);
-        ofPopMatrix();
-    }
+     drawScene();
+    
+//    // draw our randomly rotate boxes
+//    for (vector<Box>::iterator it=m_boxes.begin() ; it < m_boxes.end(); it++) {
+//        ofPushMatrix();
+//        ofRotate(it->angle, it->axis_x, it->axis_y, it->axis_z);
+//        ofScale(it->size, it->size, it->size);
+//        glDrawArrays(GL_TRIANGLES, 0, m_numBoxVerts);
+//        ofPopMatrix();
+//    }
     
     m_boxVbo.unbind();
     
@@ -238,7 +270,7 @@ void testApp::geometryPass() {
     
     glBindTexture(GL_TEXTURE_2D, 0); // unbind the texture
     
-    drawScene();
+   
     
     m_cam.end();
     
@@ -358,13 +390,13 @@ void testApp::draw() {
     // GENERATE SSAO TEXTURE
     // ---------------------
     // pass in texture units. ssaoPass.applySSAO() expects the required textures to already be bound at these units
-    m_ssaoPass.applySSAO(m_textureUnits[TEX_UNIT_NORMALS_DEPTH]);
+    if(activeAO) m_ssaoPass.applySSAO(m_textureUnits[TEX_UNIT_NORMALS_DEPTH]);
     
     deferredRender();
     
     if (m_bDrawDebug) {
         m_gBuffer.drawDebug(0, 0);
-        m_ssaoPass.drawDebug(ofGetWidth()/4*3, 0);
+        if(activeAO) m_ssaoPass.drawDebug(ofGetWidth()/4*3, 0);
         
         // draw our debug/message string
         ofEnableAlphaBlending();
@@ -374,9 +406,7 @@ void testApp::draw() {
         char debug_str[255];
         sprintf(debug_str, "Framerate: %f\nNumber of lights: %li\nPress SPACE to toggle drawing of debug buffers\nPress +/- to add and remove lights\n'p' to toggle pulsing of light intensity\n'r' to randomize light colours", ofGetFrameRate(), m_lights.size());
         ofDrawBitmapString(debug_str, ofPoint(15, 20));
-        
-	  	//______j
-        //	drawScene(0);
+  
     }
 }
 
@@ -405,7 +435,7 @@ void testApp::drawScene()
     ofPushMatrix();
     ofPushStyle();
     
-    ofScale(1,1,1);
+    //ofScale(0.01,0.01,0.01);
     
     for(int i=0;i<meshes.size();i++)
     {

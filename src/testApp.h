@@ -37,7 +37,7 @@ class testApp : public ofBaseApp {
   static const int skNumBoxes = 50;
   static const int skNumLights = 100;
   static const int skRadius = 20;
-  static const int skMaxPointLightRadius = 8;
+  static const int skMaxPointLightRadius = 22;
 
   enum TEXTURE_UNITS {
     TEX_UNIT_ALBEDO,
@@ -81,7 +81,8 @@ public:
 
   void geometryPass();
   void pointLightStencilPass();
-  void pointLightPass();
+    void pointLightPass();
+    void pointLightPassFBX();
   void deferredRender();
 	
   GBuffer m_gBuffer;
@@ -117,18 +118,15 @@ public:
   vector<PointLight> m_lights;
 	
 	//______j
+    bool activeAO;
+    void addFBXLights();
 	void drawScene();
-	vector<ofLight*>      OFlights;
+    
 	/// 3d MODEL
     ofxFBXScene             fbx;
     vector<ofxFBXMesh*>     meshes;
-    vector<ofxFBXLight*>    lights;
+    vector<ofxFBXLight*>    lightsFBX;
     vector<ofxFBXNode*>     nulls;
 
-	// params
-    ofParameter <bool> p_renderSolid;
-	ofParameter <float> p_lightAttConstant;
-    ofParameter <float> p_lightAttLinear;
-    ofParameter <float> p_lightAttQuadratic;
 
 };
