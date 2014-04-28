@@ -1034,7 +1034,7 @@
 					"$(OF_CORE_LIBS)",
 					../../../addons/ofxAssimpModelLoader/libs/assimp/lib/osx/assimp.a,
 				);
-				SDKROOT = macosx;
+				SDKROOT = macosx10.8;
 			};
 			name = Debug;
 		};
@@ -1072,7 +1072,7 @@
 					"$(OF_CORE_LIBS)",
 					../../../addons/ofxAssimpModelLoader/libs/assimp/lib/osx/assimp.a,
 				);
-				SDKROOT = macosx;
+				SDKROOT = macosx10.8;
 			};
 			name = Release;
 		};
@@ -1104,8 +1104,9 @@
 					../../../addons/ofxFBX/libs/fbxsdk/lib/linux64,
 					../../../addons/ofxFBX/libs/fbxsdk/lib/osx,
 				);
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = deferredDebug;
-				SDKROOT = macosx10.9;
+				SDKROOT = macosx10.8;
 				USER_HEADER_SEARCH_PATHS = "";
 				WRAPPER_EXTENSION = app;
 			};
@@ -1138,8 +1139,9 @@
 					../../../addons/ofxFBX/libs/fbxsdk/lib/linux64,
 					../../../addons/ofxFBX/libs/fbxsdk/lib/osx,
 				);
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = deferred;
-				SDKROOT = macosx10.9;
+				SDKROOT = macosx10.8;
 				USER_HEADER_SEARCH_PATHS = "";
 				WRAPPER_EXTENSION = app;
 			};
