@@ -24,9 +24,10 @@ void testApp::setup() {
     setupScreenQuad();
     
     m_cam.setupPerspective( false, 60.0f, 0.1f, 100.0f );
-    m_cam.setDistance(40.0f);
+    m_cam.setDistance(400.0f);
     m_cam.setGlobalPosition( 0.0f, 0.0f, 35.0f );
     m_cam.lookAt( ofVec3f( 0.0f, 0.0f, 0.0f ) );
+    m_cam.setFarClip(1000);
     
     m_shader.load("shaders/mainScene.vert", "shaders/mainScene.frag");
     m_pointLightPassShader.load("shaders/pointLightPass.vert", "shaders/pointLightPass.frag");
@@ -212,14 +213,16 @@ void testApp::geometryPass() {
     
     m_boxVbo.bind();
     
-    // draw our randomly rotate boxes
-    for (vector<Box>::iterator it=m_boxes.begin() ; it < m_boxes.end(); it++) {
-        ofPushMatrix();
-        ofRotate(it->angle, it->axis_x, it->axis_y, it->axis_z);
-        ofScale(it->size, it->size, it->size);
-        glDrawArrays(GL_TRIANGLES, 0, m_numBoxVerts);
-        ofPopMatrix();
-    }
+     drawScene();
+    
+//    // draw our randomly rotate boxes
+//    for (vector<Box>::iterator it=m_boxes.begin() ; it < m_boxes.end(); it++) {
+//        ofPushMatrix();
+//        ofRotate(it->angle, it->axis_x, it->axis_y, it->axis_z);
+//        ofScale(it->size, it->size, it->size);
+//        glDrawArrays(GL_TRIANGLES, 0, m_numBoxVerts);
+//        ofPopMatrix();
+//    }
     
     m_boxVbo.unbind();
     
@@ -238,7 +241,7 @@ void testApp::geometryPass() {
     
     glBindTexture(GL_TEXTURE_2D, 0); // unbind the texture
     
-    drawScene();
+   
     
     m_cam.end();
     
@@ -374,9 +377,7 @@ void testApp::draw() {
         char debug_str[255];
         sprintf(debug_str, "Framerate: %f\nNumber of lights: %li\nPress SPACE to toggle drawing of debug buffers\nPress +/- to add and remove lights\n'p' to toggle pulsing of light intensity\n'r' to randomize light colours", ofGetFrameRate(), m_lights.size());
         ofDrawBitmapString(debug_str, ofPoint(15, 20));
-        
-	  	//______j
-        //	drawScene(0);
+  
     }
 }
 
