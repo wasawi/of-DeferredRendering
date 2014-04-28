@@ -6,7 +6,7 @@
 //  @jimmyacres
 
 #include "testApp.h"
-
+//--------------------------------------------------------------
 testApp::testApp() :
 m_angle(0),
 m_windowWidth(0),
@@ -44,8 +44,15 @@ void testApp::setup() {
   ofMesh sphereMesh = Primitives::getSphereMesh(6);
   m_numSphereVerts = sphereMesh.getVertices().size();
   m_sphereVbo.setMesh(sphereMesh, GL_STATIC_DRAW);
-}
+	
+	
+	/// 3D MODEL DDD
+    ofSetLogLevel(OF_LOG_VERBOSE);
+    string modelFilename = "lev.fbx";
+    fbx.load(modelFilename);
 
+}
+//--------------------------------------------------------------
 void testApp::resizeBuffersAndTextures() {
 
   if (ofGetWindowMode() == OF_FULLSCREEN) {
@@ -64,7 +71,7 @@ void testApp::resizeBuffersAndTextures() {
 
   bindGBufferTextures(); // bind them once to upper texture units - faster than binding/unbinding every frame
 }
-
+//--------------------------------------------------------------
 void testApp::setupScreenQuad() {
   ofVec2f quadVerts[] = {
     ofVec2f(-1.0f, -1.0f),
@@ -84,7 +91,7 @@ void testApp::setupScreenQuad() {
   m_quadVbo.setVertexData(&quadVerts[0], 4, GL_STATIC_DRAW);
   m_quadVbo.setTexCoordData(&quadTexCoords[0], 4, GL_STATIC_DRAW);
 }
-
+//--------------------------------------------------------------
 void testApp::createRandomBoxes() {
   // create randomly rotated boxes
   for (unsigned int i=0; i<skNumBoxes; i++) {
@@ -99,13 +106,13 @@ void testApp::createRandomBoxes() {
     m_boxes.push_back(Box(ofVec3f(x, y, z), angle, axis.x, axis.y, axis.z, size));
   }
 }
-
+//--------------------------------------------------------------
 void testApp::setupLights() {
   for (unsigned int i=0; i<skNumLights; i++) {
     addRandomLight();
   }
 }
-
+//--------------------------------------------------------------
 void testApp::addRandomLight() {
   // create a random light that is positioned on bounding sphere of scene (skRadius)
   PointLight l;
@@ -130,14 +137,14 @@ void testApp::addRandomLight() {
 
   m_lights.push_back(l);
 }
-
+//--------------------------------------------------------------
 void testApp::randomizeLightColors() {
   for (vector<PointLight>::iterator it = m_lights.begin(); it != m_lights.end(); it++) {
     ofVec3f col = ofVec3f(ofRandom(0.4f, 1.0f), ofRandom(0.1f, 1.0f), ofRandom(0.3f, 1.0f));
     it->setDiffuse(col.x, col.y, col.z);
   }
 }
-
+//--------------------------------------------------------------
 void testApp::bindGBufferTextures() {
   // set up the texture units we want to use - we're using them every frame, so we'll leave them bound to these units to save speed vs. binding/unbinding
   m_textureUnits[TEX_UNIT_ALBEDO] = 15;
@@ -175,7 +182,7 @@ void testApp::bindGBufferTextures() {
 
   glActiveTexture(GL_TEXTURE0);
 }
-
+//--------------------------------------------------------------
 void testApp::unbindGBufferTextures() {
   // unbind textures and reset active texture back to zero (OF expects it at 0 - things like ofDrawBitmapString() will break otherwise)
   glActiveTexture(GL_TEXTURE0 + m_textureUnits[TEX_UNIT_ALBEDO]); glBindTexture(GL_TEXTURE_2D, 0);
@@ -184,7 +191,7 @@ void testApp::unbindGBufferTextures() {
 
   glActiveTexture(GL_TEXTURE0);
 }
-
+//--------------------------------------------------------------
 void testApp::geometryPass() {
 
   glDisable(GL_STENCIL_TEST);
@@ -233,10 +240,10 @@ void testApp::geometryPass() {
 
   m_gBuffer.unbindForGeomPass(); // done rendering out to our GBuffer
 }
-
+//--------------------------------------------------------------
 void testApp::pointLightStencilPass() {
 }
-
+//--------------------------------------------------------------
 void testApp::pointLightPass() {
 
   m_gBuffer.resetLightPass();
@@ -363,9 +370,13 @@ void testApp::draw() {
     char debug_str[255];
     sprintf(debug_str, "Framerate: %f\nNumber of lights: %li\nPress SPACE to toggle drawing of debug buffers\nPress +/- to add and remove lights\n'p' to toggle pulsing of light intensity\n'r' to randomize light colours", ofGetFrameRate(), m_lights.size());
     ofDrawBitmapString(debug_str, ofPoint(15, 20));
+	  
+	  	//______j
+//	drawScene(0);
   }  
 }
 
+//--------------------------------------------------------------
 void testApp::drawScreenQuad() {
   // set identity matrices and save current matrix state
   glMatrixMode(GL_PROJECTION);
@@ -382,6 +393,63 @@ void testApp::drawScreenQuad() {
   glPopMatrix();
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();
+}
+
+//--------------------------------------------------------------
+void testApp::drawScene(int iCameraDraw)
+{
+    // CCC
+    //enableFog(50,700);
+    
+    glEnable(GL_DEPTH_TEST);
+	
+    
+    ofEnableDepthTest();
+    
+        /// 3D MODEL
+        for(int i=0;i<lights.size();i++)
+        {
+            OFlights[i]->enable();
+            OFlights[i]->setAttenuation(p_lightAttConstant,p_lightAttLinear,p_lightAttQuadratic);
+        }
+        
+        
+        
+        ofEnableLighting();
+        
+        
+        ofPushMatrix();
+        ofPushStyle();
+        
+        ofScale(1,1,1);
+        
+        //ofEnableSmoothing();
+        for(int i=0;i<meshes.size();i++)
+        {
+            
+			
+            if(p_renderSolid)
+            {
+                ofMaterial m1;
+                ofColor ambientColor = ofColor(0,0,0);
+                ofColor diffuseColor = ofColor(200,0,0);
+                ofColor specularColor = ofColor(0,255,200);
+                m1.begin();
+                m1.setShininess(99.26);
+                m1.setAmbientColor(ambientColor);
+                m1.setDiffuseColor(diffuseColor);
+                m1.setSpecularColor(specularColor);
+                
+                meshes[i]->draw();
+				
+                m1.end();
+            }
+		}
+        //    for(int i=0;i<meshes.size();i++)
+        //    {
+        //        meshes[i]->drawWireframe();
+        //    }
+        //ofDisableSmoothing();
 }
 
 //--------------------------------------------------------------

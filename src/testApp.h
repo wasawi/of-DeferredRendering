@@ -12,6 +12,7 @@
 #include "ssaoPass.h"
 #include "pointLight.h"
 #include "primitives.h"
+#include "ofxFBX.h"
 
 class testApp : public ofBaseApp {
 
@@ -82,7 +83,7 @@ public:
   void pointLightStencilPass();
   void pointLightPass();
   void deferredRender();
-
+	
   GBuffer m_gBuffer;
   SSAOPass m_ssaoPass;
 
@@ -114,4 +115,20 @@ public:
 
   vector<Box> m_boxes;
   vector<PointLight> m_lights;
+	
+	//______j
+	void drawScene(int iCameraDraw);
+	vector<ofLight*>      OFlights;
+	/// 3d MODEL
+    ofxFBXScene             fbx;
+    vector<ofxFBXMesh*>     meshes;
+    vector<ofxFBXLight*>    lights;
+    vector<ofxFBXNode*>     nulls;
+
+	// params
+    ofParameter <bool> p_renderSolid;
+	ofParameter <float> p_lightAttConstant;
+    ofParameter <float> p_lightAttLinear;
+    ofParameter <float> p_lightAttQuadratic;
+
 };
